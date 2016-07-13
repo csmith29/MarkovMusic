@@ -49,6 +49,22 @@ public class MarkovMusic implements JMC {
         } //else
     } //twice(double[])
     
+    public static int[] reverse(int[] pitchArray) {
+        int[] reversed = new int[pitchArray.length];
+        for (int i = 0; i < pitchArray.length; i++) {
+            reversed[pitchArray.length - 1 - i] = pitchArray[i];
+        } //for i
+        return reversed;
+    } //reverse(int[])
+    
+    public static double[] reverse(double[] rhythmArray) {
+        double[] reversed = new double[rhythmArray.length];
+        for (int i = 0; i < rhythmArray.length; i++) {
+            reversed[rhythmArray.length - 1 - i] = rhythmArray[i];
+        } //for i
+        return reversed;
+    } //reverse(int[])
+    
     /**
      * 
      * @param pitchArray the pitches of a song, as integers from 0 to 127
@@ -105,6 +121,13 @@ public class MarkovMusic implements JMC {
         return newPitchArray;
     } //newPitches(int[], int)
     
+    public static int[] newPitchesReverse(int[] pitchArray, int length) {
+        int[] reversed = reverse(pitchArray);
+        int[] newReversed = newPitches(reversed, length);
+        int[] newPitchArray = reverse(newReversed);
+        return newPitchArray;
+    } //newPitchesReverse(int[], int)
+    
     public static int[][] countRhythmTransitions(double[] rhythms) {
         int[][] counts = new int[16][16];
         double[] rhythmArray = twice(rhythms);
@@ -150,12 +173,20 @@ public class MarkovMusic implements JMC {
         return newRhythmArray;
     } //newRhythms(double[], int)
     
+    public static double[] newRhythmsReverse(double[] rhythmArray, int length) {
+        double[] reversed = reverse(rhythmArray);
+        double[] newReversed = newRhythms(reversed, length);
+        double[] newPitchArray = reverse(newReversed);
+        return newPitchArray;
+    } //newRhythmsReverse(double[], int)
+    
     public static void main(String[] args) {
         int[] pitchArray = MARY;
         double[] rhythmArray = MARYBEATS;
+        int length = MARY.length;
         
-        int[] newPitchArray = newPitches(pitchArray, 20);
-        double[] newRhythmArray = newRhythms(rhythmArray, 20);
+        int[] newPitchArray = newPitchesReverse(pitchArray, length);
+        double[] newRhythmArray = newRhythmsReverse(rhythmArray, length);
         double bpm = 150.0;
         
         printArray(newRhythmArray);
