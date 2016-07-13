@@ -1,0 +1,166 @@
+
+package markovmusic;
+
+import static mylibrary.SongArrays.*;
+import static mylibrary.PrintArrays.*;
+import static mylibrary.JMusicQuick.*;
+
+import jm.JMC;
+
+/**
+ *
+ * @author Collin
+ */
+public class MarkovMusic implements JMC {
+
+    public static int[] twice(int[] pitchArray) {
+        boolean included = false;
+        int i = 0;
+        while (!included && i < pitchArray.length - 1) {
+            included = pitchArray[i] == pitchArray[pitchArray.length - 1];
+            i++;
+        } //while
+        if (included) return pitchArray;
+        else {
+            int[] twice = new int[2*pitchArray.length];
+            for (int j = 0; j < pitchArray.length; j++) {
+                twice[j] = pitchArray[j];
+                twice[pitchArray.length + j] = pitchArray[j];
+            } //for
+            return twice;
+        } //else
+    } //twice(int[])
+    
+    public static double[] twice(double[] rhythmArray) {
+        boolean included = false;
+        int i = 0;
+        while (!included && i < rhythmArray.length - 1) {
+            included = rhythmArray[i] == rhythmArray[rhythmArray.length - 1];
+            i++;
+        } //while
+        if (included) return rhythmArray;
+        else {
+            double[] twice = new double[2*rhythmArray.length];
+            for (int j = 0; j < rhythmArray.length; j++) {
+                twice[j] = rhythmArray[j];
+                twice[rhythmArray.length + j] = rhythmArray[j];
+            } //for
+            return twice;
+        } //else
+    } //twice(double[])
+    
+    /**
+     * 
+     * @param pitchArray the pitches of a song, as integers from 0 to 127
+     * @return a 128 by 128 array of integers, showing how many times note i 
+     * is followed by note j.
+     */
+    public static int[][] countPitchTransitions(int[] pitches) {
+        int[][] counts = new int[128][128];
+        int[] pitchArray = twice(pitches);
+        for (int i = 0; i < pitchArray.length - 1; i++) {
+            int note = pitchArray[i];
+            int next = pitchArray[i + 1];
+            counts[note][next]++;
+        } //for i
+        return counts;
+    } //countPitchTransitions(int[])
+    
+    /**
+     * 
+     * @param pitchArray the pitches of a song
+     * @return a 128 by 128 state transition matrix
+     */
+    public static double[][] pitchTransitionMatrix(int[] pitchArray) {
+        int[][] counts = countPitchTransitions(pitchArray);
+        double[][] transitions = new double[128][128];
+        for (int i = 0; i < 128; i++) {
+            int sum = 0;
+            for (int j = 0; j < 128; j++) {
+                sum += counts[i][j];
+            } //for j
+            if (sum > 0) {
+                for (int j = 0; j < 128; j++) {
+                    transitions[i][j] = ((double)counts[i][j])/((double)sum);
+                } //for j
+            } //if
+        } //for i
+        return transitions;
+    } //pitchTransitionMatrix(int[])
+    
+    public static int[] newPitches(int[] pitchArray, int length) {
+        double[][] transitions = pitchTransitionMatrix(pitchArray);
+        int[] newPitchArray = new int[length];
+        newPitchArray[0] = pitchArray[0];
+        for (int i = 1; i < length; i++) {
+            double r = Math.random();
+            double sum = transitions[newPitchArray[i - 1]][0];
+            int j = 0;
+            while (sum < r && j < 127) {
+                j++;
+                sum += transitions[newPitchArray[i - 1]][j];
+            } //while
+            newPitchArray[i] = j;
+        } //for i
+        return newPitchArray;
+    } //newPitches(int[], int)
+    
+    public static int[][] countRhythmTransitions(double[] rhythms) {
+        int[][] counts = new int[16][16];
+        double[] rhythmArray = twice(rhythms);
+        for (int i = 0; i < rhythmArray.length - 1; i++) {
+            double beat = 4.0*rhythmArray[i] - 1.0;
+            double next = 4.0*rhythmArray[i + 1] - 1.0;
+            counts[(int)beat][(int)next]++;
+        } //for i
+        return counts;
+    } //countRhythmTransitions(double[])
+    
+    public static double[][] rhythmTransitionMatrix(double[] rhythmArray) {
+        int[][] counts = countRhythmTransitions(rhythmArray);
+        double[][] transitions = new double[16][16];
+        for (int i = 0; i < 16; i++) {
+            int sum = 0;
+            for (int j = 0; j < 16; j++) {
+                sum += counts[i][j];
+            } //for j
+            if (sum > 0) {
+                for (int j = 0; j < 16; j++) {
+                    transitions[i][j] = ((double)counts[i][j])/((double)sum);
+                } //for j
+            } //if
+        } //for i
+        return transitions;
+    } //rhythmTransitionMatrix(double[])
+    
+    public static double[] newRhythms(double[] rhythmArray, int length) {
+        double[][] transitions = rhythmTransitionMatrix(rhythmArray);
+        double[] newRhythmArray = new double[length];
+        newRhythmArray[0] = rhythmArray[0];
+        for (int i = 1; i < length; i++) {
+            double r = Math.random();
+            double sum = transitions[(int)(4.0*newRhythmArray[i - 1] - 1)][0];
+            int j = 0;
+            while (sum < r && j < 15) {
+                j++;
+                sum += transitions[(int)(4.0*newRhythmArray[i - 1] - 1)][j];
+            } //while
+            newRhythmArray[i] = (double)(j + 1)/4.0;
+        } //for i
+        return newRhythmArray;
+    } //newRhythms(double[], int)
+    
+    public static void main(String[] args) {
+        int[] pitchArray = MARY;
+        double[] rhythmArray = MARYBEATS;
+        
+        int[] newPitchArray = newPitches(pitchArray, 20);
+        double[] newRhythmArray = newRhythms(rhythmArray, 20);
+        double bpm = 150.0;
+        
+        printArray(newRhythmArray);
+        notate(newPitchArray, newRhythmArray);
+        play(newPitchArray, newRhythmArray, bpm);
+    } //main(String[])
+    
+} //MarkovMusic
